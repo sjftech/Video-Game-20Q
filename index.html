@@ -6,76 +6,78 @@
     <title>20 Questions: Video Games</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .btn-query { @apply bg-gray-800 border border-gray-700 p-3 rounded-lg hover:bg-gray-700 transition-all text-sm font-medium active:scale-95; }
         .status-yes { @apply border-green-500 text-green-500 bg-green-500/10; }
         .status-no { @apply border-red-500 text-red-500 bg-red-500/10; }
         .status-default { @apply border-gray-700 text-gray-500 bg-gray-900/50; }
+        .status-confused { @apply border-yellow-600 text-yellow-600 bg-yellow-600/10; }
     </style>
 </head>
-<body class="bg-black text-gray-100 min-h-screen flex flex-col items-center p-6 font-sans">
+<body class="bg-black text-gray-100 min-h-screen flex flex-col items-center p-4 md:p-10 font-sans">
 
     <div class="w-full max-w-xl">
         <header class="text-center mb-10">
-            <h1 class="text-3xl font-bold tracking-tight mb-2">20 Questions</h1>
-            <p class="text-gray-500 uppercase tracking-widest text-xs">Video Game Edition</p>
+            <h1 class="text-3xl font-bold tracking-tight mb-2 uppercase italic">20 Questions</h1>
+            <p class="text-gray-500 tracking-[0.3em] text-[10px] uppercase">Automated Game Library</p>
         </header>
+
+        <div id="start-screen" class="text-center py-20 bg-gray-900/50 rounded-3xl border border-gray-800">
+            <button onclick="setupGame()" id="fetch-btn" class="bg-white text-black px-12 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform active:scale-95">
+                START NEW GAME
+            </button>
+            <p id="loading-msg" class="hidden mt-4 text-gray-500 animate-pulse uppercase text-xs tracking-widest">Accessing Database...</p>
+        </div>
 
         <main id="game-board" class="hidden">
             <div class="flex justify-between items-end mb-4 px-2">
                 <div>
-                    <p class="text-xs text-gray-500 uppercase">Progress</p>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Attempts</p>
                     <p class="text-2xl font-mono"><span id="q-count">0</span><span class="text-gray-600">/20</span></p>
                 </div>
-                <button onclick="location.reload()" class="text-xs text-gray-500 hover:text-white transition-colors">NEW GAME</button>
+                <button onclick="location.reload()" class="text-xs text-gray-500 hover:text-white transition-colors">ABANDON GAME</button>
             </div>
 
-            <div id="display-box" class="h-40 flex items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 status-default">
+            <div id="display-box" class="h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 status-default px-6">
                 <span id="display-text" class="text-5xl font-black uppercase tracking-tighter">Ready</span>
+                <span id="detected-intent" class="text-[10px] mt-4 opacity-60 uppercase tracking-widest text-center">Ask a question below</span>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 mb-10">
-                <button class="btn-query" onclick="ask('genre', 'Action')">Action?</button>
-                <button class="btn-query" onclick="ask('genre', 'Role Playing Games')">RPG?</button>
-                <button class="btn-query" onclick="ask('platform', 'Nintendo')">Nintendo?</button>
-                <button class="btn-query" onclick="ask('platform', 'PlayStation')">PlayStation?</button>
-                <button class="btn-query" onclick="ask('platform', 'PC')">PC?</button>
-                <button class="btn-query" onclick="ask('year', 2018)">Released 2018+</button>
-                <button class="btn-query" onclick="ask('year', 2010)">Released 2010-</button>
-                <button class="btn-query" onclick="ask('meta', 85)">High Metacritic (85+)?</button>
-            </div>
+            <div class="space-y-6">
+                <div>
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest ml-2 mb-2 block">Your Question</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="question-input" 
+                            placeholder="e.g. 'Is it an RPG?' or 'Was it out before 2010?'" 
+                            class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-white transition-colors">
+                        <button onclick="processQuestion()" class="bg-white text-black px-6 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors">ASK</button>
+                    </div>
+                </div>
 
-            <div class="space-y-4">
-                <input type="text" id="guess-input" placeholder="Enter game title..." 
-                    class="w-full bg-gray-900 border border-gray-800 rounded-xl p-4 text-center text-lg focus:outline-none focus:border-blue-500 transition-colors">
-                <button onclick="submitGuess()" class="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition-transform active:scale-95">
-                    SOLVE
-                </button>
+                <div class="pt-4 border-t border-gray-800">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest ml-2 mb-2 block">Final Solution</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="guess-input" 
+                            placeholder="Type the full game title..." 
+                            class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                        <button onclick="submitGuess()" class="bg-blue-600 text-white px-6 rounded-xl font-bold text-sm hover:bg-blue-500 transition-colors uppercase tracking-widest">Solve</button>
+                    </div>
+                </div>
             </div>
         </main>
-
-        <div id="start-screen" class="text-center py-20">
-            <button onclick="setupGame()" id="fetch-btn" class="bg-white text-black px-12 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform">
-                START GAME
-            </button>
-            <p id="loading-msg" class="hidden mt-4 text-gray-500 animate-pulse">Consulting the database...</p>
-        </div>
     </div>
 
     <script>
-        /** CONFIGURATION **/
-        const API_KEY = 'cb76f55aa533491883169019a274e4c6'; // <--- PASTE YOUR RAWG API KEY HERE
+        /** PASTE YOUR KEY HERE **/
+        const API_KEY = 'cb76f55aa533491883169019a274e4c6';
         
         let secretGame = null;
         let questionsUsed = 0;
 
         async function setupGame() {
-            const btn = document.getElementById('fetch-btn');
-            const msg = document.getElementById('loading-msg');
-            btn.classList.add('hidden');
-            msg.classList.remove('hidden');
+            document.getElementById('fetch-btn').classList.add('hidden');
+            document.getElementById('loading-msg').classList.remove('hidden');
 
             try {
-                // Fetching from a pool of popular games to ensure they are guessable
+                // Fetch from popular games (top 10 pages) to ensure they are recognizable
                 const randomPage = Math.floor(Math.random() * 10) + 1;
                 const response = await fetch(`https://api.rawg.io/api/games?key=${API_KEY}&page_size=40&page=${randomPage}&ordering=-added`);
                 const data = await response.json();
@@ -85,47 +87,101 @@
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('game-board').classList.remove('hidden');
                 
-                // Debugging: Secret answer is in the Console (F12)
+                // Debugging: View answer in F12 console
                 console.log("Secret Answer: " + secretGame.name);
             } catch (err) {
-                alert("Failed to load game library. Check your API key.");
+                alert("API Error. Make sure your key is correct!");
                 location.reload();
             }
         }
 
-        function ask(type, val) {
-            if (questionsUsed >= 20) return;
+        function processQuestion() {
+            const input = document.getElementById('question-input');
+            const query = input.value.toLowerCase().trim();
+            if (!query || questionsUsed >= 20) return;
 
             questionsUsed++;
             document.getElementById('q-count').innerText = questionsUsed;
-            
-            let isTrue = false;
+            input.value = ""; 
 
-            switch(type) {
-                case 'genre':
-                    isTrue = secretGame.genres.some(g => g.name.includes(val));
-                    break;
-                case 'platform':
-                    isTrue = secretGame.platforms.some(p => p.platform.name.includes(val));
-                    break;
-                case 'meta':
-                    isTrue = secretGame.metacritic >= val;
-                    break;
-                case 'year':
-                    const releaseYear = parseInt(secretGame.released.split('-')[0]);
-                    isTrue = (val === 2018) ? (releaseYear >= 2018) : (releaseYear <= 2010);
-                    break;
+            let isTrue = false;
+            let intentMsg = "";
+            let recognized = true;
+
+            // KEYWORD ENGINE
+            if (query.includes("multiplayer") || query.includes("2 player") || query.includes("two player") || query.includes("co-op")) {
+                intentMsg = "Detecting Multiplayer...";
+                isTrue = secretGame.tags.some(t => t.slug.includes('multiplayer') || t.slug.includes('co-op'));
+            } 
+            else if (query.includes("action")) {
+                intentMsg = "Checking Genre: Action...";
+                isTrue = secretGame.genres.some(g => g.slug.includes('action'));
+            }
+            else if (query.includes("rpg") || query.includes("role playing")) {
+                intentMsg = "Checking Genre: RPG...";
+                isTrue = secretGame.genres.some(g => g.slug.includes('role-playing'));
+            }
+            else if (query.includes("before") || query.includes("prior to") || query.includes("older than")) {
+                const yearMatch = query.match(/\d{4}/);
+                if (yearMatch) {
+                    const year = parseInt(yearMatch[0]);
+                    intentMsg = `Checking if released before ${year}...`;
+                    isTrue = parseInt(secretGame.released.split('-')[0]) < year;
+                } else { recognized = false; }
+            }
+            else if (query.includes("after") || query.includes("newer than") || query.includes("since")) {
+                const yearMatch = query.match(/\d{4}/);
+                if (yearMatch) {
+                    const year = parseInt(yearMatch[0]);
+                    intentMsg = `Checking if released after ${year}...`;
+                    isTrue = parseInt(secretGame.released.split('-')[0]) > year;
+                } else { recognized = false; }
+            }
+            else if (query.includes("nintendo") || query.includes("switch") || query.includes("mario")) {
+                intentMsg = "Platform: Nintendo?";
+                isTrue = secretGame.platforms.some(p => p.platform.name.toLowerCase().includes('nintendo') || p.platform.name.toLowerCase().includes('switch'));
+            }
+            else if (query.includes("playstation") || query.includes("ps4") || query.includes("ps5") || query.includes("sony")) {
+                intentMsg = "Platform: PlayStation?";
+                isTrue = secretGame.platforms.some(p => p.platform.name.toLowerCase().includes('playstation'));
+            }
+            else if (query.includes("pc") || query.includes("windows") || query.includes("computer")) {
+                intentMsg = "Platform: PC?";
+                isTrue = secretGame.platforms.some(p => p.platform.name.toLowerCase().includes('pc') || p.platform.name.toLowerCase().includes('windows'));
+            }
+            else if (query.includes("first person") || query.includes("fps")) {
+                intentMsg = "Perspective: First Person?";
+                isTrue = secretGame.tags.some(t => t.slug.includes('first-person'));
+            }
+            else if (query.includes("open world")) {
+                intentMsg = "Theme: Open World?";
+                isTrue = secretGame.tags.some(t => t.slug.includes('open-world'));
+            }
+            else {
+                recognized = false;
             }
 
-            updateDisplay(isTrue);
+            if (!recognized) {
+                updateDisplay(null, "I didn't understand the question. Try 'action', 'multiplayer', or dates.");
+            } else {
+                updateDisplay(isTrue, intentMsg);
+            }
         }
 
-        function updateDisplay(isTrue) {
+        function updateDisplay(isTrue, intent) {
             const box = document.getElementById('display-box');
             const txt = document.getElementById('display-text');
+            const sub = document.getElementById('detected-intent');
             
-            txt.innerText = isTrue ? "Yes" : "No";
-            box.className = `h-40 flex items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 ${isTrue ? 'status-yes' : 'status-no'}`;
+            sub.innerText = intent;
+
+            if (isTrue === null) {
+                txt.innerText = "???";
+                box.className = `h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 status-confused`;
+            } else {
+                txt.innerText = isTrue ? "Yes" : "No";
+                box.className = `h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 ${isTrue ? 'status-yes' : 'status-no'}`;
+            }
         }
 
         function submitGuess() {
@@ -136,7 +192,7 @@
                 alert("CORRECT! The game was " + secretGame.name);
                 location.reload();
             } else {
-                alert("Incorrect. That's not it!");
+                alert("Incorrect. That's not the one!");
             }
         }
     </script>
