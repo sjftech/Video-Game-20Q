@@ -3,75 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Game 20 Questions (Qwen Edition)</title>
+    <title>20Q: Qwen AI Unified</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .status-yes { @apply border-green-500 text-green-500 bg-green-500/10; }
         .status-no { @apply border-red-500 text-red-500 bg-red-500/10; }
         .status-default { @apply border-gray-700 text-gray-500 bg-gray-900/50; }
         .status-thinking { @apply border-blue-500 text-blue-500 bg-blue-500/10 animate-pulse; }
-        #win-modal { display: none; }
+        .grid-square { @apply w-full aspect-square flex items-center justify-center rounded-lg border-2 text-[10px] font-bold uppercase transition-all duration-300; }
+        #overlay-modal { display: none; }
     </style>
 </head>
 <body class="bg-black text-gray-100 min-h-screen flex flex-col items-center p-4 md:p-10 font-sans tracking-tight relative">
 
-    <div id="win-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-        <div class="bg-gray-900 border border-green-500 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-            <h2 class="text-4xl font-black text-green-500 mb-2 uppercase italic tracking-tighter">SUCCESS</h2>
-            <p class="text-gray-400 mb-6 uppercase text-[10px] tracking-[0.2em]">Objective Achieved</p>
-            <div id="win-game-title" class="text-2xl font-bold mb-8 text-white">Game Name</div>
-            <button onclick="location.reload()" class="w-full bg-white text-black py-4 rounded-xl font-bold hover:bg-green-400 transition-colors uppercase text-sm">Deploy Next Mission</button>
+    <div id="overlay-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div id="modal-content" class="bg-gray-900 border rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <h2 id="modal-status" class="text-4xl font-black mb-2 uppercase italic tracking-tighter">STATUS</h2>
+            <p id="modal-msg" class="text-gray-400 mb-6 uppercase text-[10px] tracking-[0.2em]">Data Log</p>
+            <div id="modal-title" class="text-2xl font-bold mb-8 text-white underline decoration-blue-500">Game Name</div>
+            <button onclick="location.reload()" class="w-full bg-white text-black py-4 rounded-xl font-bold hover:bg-blue-400 transition-colors uppercase text-sm">Next Mission</button>
         </div>
     </div>
 
     <div class="w-full max-w-xl">
-        <header class="text-center mb-10">
+        <header class="text-center mb-6">
             <h1 class="text-3xl font-bold uppercase italic tracking-tighter">20Q: Qwen AI</h1>
         </header>
 
         <div id="setup-screen" class="text-center py-12 bg-gray-900/50 rounded-3xl border border-gray-800 px-6">
             <div id="init-ui">
-                <p class="text-sm text-gray-400 mb-6 font-mono">MODEL: Qwen2.5-0.5B (Ultra-Lightweight)</p>
-                <button onclick="initializeAI()" class="bg-blue-600 text-white px-12 py-4 rounded-full font-bold text-lg hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20">BOOT ENGINE</button>
+                <p class="text-sm text-gray-400 mb-6 font-mono">MODEL: Qwen2.5-0.5B (WebGPU)</p>
+                <button onclick="initializeAI()" class="bg-blue-600 text-white px-12 py-4 rounded-full font-bold text-lg hover:bg-blue-500 transition-all">BOOT ENGINE</button>
             </div>
             <div id="loading-bar-container" class="hidden space-y-4">
                 <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
                     <div id="loading-bar-fill" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
                 </div>
-                <p id="loading-status" class="text-[10px] text-gray-500 uppercase tracking-widest font-mono">Loading Neural Weights...</p>
+                <p id="loading-status" class="text-[10px] text-gray-500 uppercase tracking-widest font-mono text-center">Loading Neural Weights...</p>
             </div>
         </div>
 
         <main id="game-board" class="hidden">
             <div class="flex justify-between items-end mb-4 px-2">
                 <div>
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest text-blue-400">Question Trace</p>
-                    <p class="text-2xl font-mono"><span id="q-count">0</span><span class="text-gray-600">/20</span></p>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest text-blue-400">Attempts Remaining</p>
+                    <p class="text-2xl font-mono"><span id="q-count">20</span></p>
                 </div>
                 <div class="flex gap-4">
-                    <button onclick="document.getElementById('history-panel').classList.toggle('hidden')" class="text-xs text-blue-400 uppercase font-bold tracking-widest hover:text-white">Log</button>
-                    <button onclick="location.reload()" class="text-xs text-gray-600 hover:text-red-400 uppercase font-bold tracking-widest transition-colors">Abort</button>
+                    <button onclick="handleGiveUp()" class="text-xs text-red-500 uppercase font-bold tracking-widest hover:text-white transition-colors">Give Up</button>
+                    <button onclick="location.reload()" class="text-xs text-gray-600 hover:text-white uppercase font-bold tracking-widest">Restart</button>
                 </div>
             </div>
 
-            <div id="display-box" class="h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 status-default px-6 text-center shadow-inner">
-                <span id="display-text" class="text-6xl font-black uppercase tracking-tighter">Ready</span>
-                <span id="detected-intent" class="text-[10px] mt-4 opacity-40 uppercase tracking-[0.3em]">Awaiting User Input</span>
+            <div id="display-box" class="h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-6 status-default px-6 text-center shadow-inner">
+                <span id="display-text" class="text-6xl font-black uppercase tracking-tighter leading-none">Ready</span>
+                <span id="detected-intent" class="text-[10px] mt-4 opacity-40 uppercase tracking-[0.3em]">Type a Question or Name</span>
             </div>
 
-            <div id="history-panel" class="hidden bg-gray-900/80 border border-gray-800 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto"><ul id="history-list" class="text-sm space-y-2 font-mono"></ul></div>
-
-            <div class="space-y-6">
+            <div class="mb-6">
                 <div class="flex gap-2">
-                    <input type="text" id="question-input" onkeypress="if(event.key === 'Enter') handleAIQuestion()" placeholder="Ask setting, genre, or style..." class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 transition-all">
-                    <button id="ask-btn" onclick="handleAIQuestion()" class="bg-white text-black px-6 rounded-xl font-bold text-sm uppercase hover:bg-blue-400">Ask</button>
+                    <input type="text" id="unified-input" onkeypress="if(event.key === 'Enter') processInput()" placeholder="Is it Sci-Fi? / Elden Ring..." class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500">
+                    <button id="send-btn" onclick="processInput()" class="bg-white text-black px-6 rounded-xl font-bold text-sm uppercase hover:bg-blue-400">Send</button>
                 </div>
-                <div class="pt-4 border-t border-gray-800">
-                    <div class="flex gap-2">
-                        <input type="text" id="guess-input" onkeypress="if(event.key === 'Enter') submitGuess()" placeholder="Identify target..." class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-green-500">
-                        <button onclick="submitGuess()" class="bg-green-600 text-white px-6 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-green-500 transition-colors">Solve</button>
+                <p class="text-[9px] text-gray-600 uppercase mt-2 ml-2 tracking-widest">Guessing a specific name counts as 1 attempt.</p>
+            </div>
+
+            <div class="pt-4 border-t border-gray-800">
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-3">Memory Log (1-20)</p>
+                <div id="grid-history" class="grid grid-cols-5 gap-2">
                     </div>
-                </div>
             </div>
         </main>
     </div>
@@ -82,17 +82,23 @@
         const RAWG_KEY = 'cb76f55aa533491883169019a274e4c6'; 
         let engine;
         let secretGame = null;
-        let questionsUsed = 0;
+        let attemptsRemaining = 20;
+
+        // Initialize History Grid
+        const grid = document.getElementById('grid-history');
+        for(let i=1; i<=20; i++) {
+            const square = document.createElement('div');
+            square.id = `q-square-${i}`;
+            square.className = "grid-square border-gray-800 text-gray-800";
+            square.innerText = i;
+            grid.appendChild(square);
+        }
 
         window.initializeAI = async () => {
             document.getElementById('init-ui').classList.add('hidden');
             document.getElementById('loading-bar-container').classList.remove('hidden');
-            
-            // Using Qwen2.5-0.5B for extreme speed and small footprint
-            const model = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC"; 
-            
             try {
-                engine = await webllm.CreateMLCEngine(model, {
+                engine = await webllm.CreateMLCEngine("Qwen2.5-0.5B-Instruct-q4f16_1-MLC", {
                     initProgressCallback: (r) => {
                         document.getElementById('loading-bar-fill').style.width = Math.round(r.progress * 100) + "%";
                         document.getElementById('loading-status').innerText = r.text;
@@ -100,7 +106,7 @@
                 });
                 await prepareGame();
             } catch (e) {
-                alert("WebGPU not detected or Model Error. Please use Chrome/Edge on Desktop.");
+                alert("WebGPU failed. Check browser.");
             }
         };
 
@@ -110,63 +116,102 @@
             secretGame = data.results[Math.floor(Math.random() * data.results.length)];
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('game-board').classList.remove('hidden');
-            console.log("Secret Answer (For Dev): " + secretGame.name);
+            console.log("Secret: " + secretGame.name);
         }
 
-        window.handleAIQuestion = async () => {
-            const input = document.getElementById('question-input');
-            const btn = document.getElementById('ask-btn');
-            if (!input.value.trim() || questionsUsed >= 20 || btn.disabled) return;
-            
-            const userQuery = input.value;
-            input.value = "";
-            btn.disabled = true;
-            updateDisplay('thinking', 'Neural Processing...');
+        window.processInput = async () => {
+            const input = document.getElementById('unified-input');
+            const val = input.value.trim();
+            if (!val || attemptsRemaining <= 0) return;
 
-            const context = `Target: ${secretGame.name}. Tags: ${secretGame.tags.map(t=>t.name).join(',')}. Genres: ${secretGame.genres.map(g=>g.name).join(',')}. Released: ${secretGame.released}.`;
+            const lowerVal = val.toLowerCase();
+            const solution = secretGame.name.toLowerCase();
+
+            // 1. CHECK IF GUESS
+            // Logic: If it's very short (unless it's a perfect match), assume it's a question.
+            // If it's a near match, trigger win/loss immediately.
+            if (lowerVal === solution || (solution.includes(lowerVal) && lowerVal.length > 3)) {
+                showModal("VICTORY", "Target Identified", "border-green-500", "text-green-500");
+                return;
+            }
+
+            // If it looks like a name but isn't correct...
+            // Simple heuristic: if it doesn't have common question words, it's a guess.
+            const questionWords = ["is", "was", "does", "can", "has", "did", "are", "would", "how", "?", "genre"];
+            const isQuestion = questionWords.some(word => lowerVal.includes(word));
+
+            if (!isQuestion && lowerVal.split(' ').length < 4) {
+                // It was a wrong guess
+                attemptsRemaining--;
+                updateGrid(false, val);
+                updateDisplay('no', 'Incorrect Guess');
+                input.value = "";
+                checkLoss();
+                return;
+            }
+
+            // 2. PROCESS AS AI QUESTION
+            await handleAIQuestion(val);
+            input.value = "";
+        };
+
+        async function handleAIQuestion(query) {
+            updateDisplay('thinking', 'Neural Processing...');
+            const context = `Target: ${secretGame.name}. Tags: ${secretGame.tags.map(t=>t.name).join(',')}. Genres: ${secretGame.genres.map(g=>g.name).join(',')}.`;
             
             const messages = [
-                { role: "system", content: "You are a judge for 20 Questions. You know the Target Game data. Rule 1: NEVER name the game. Rule 2: Answer ONLY with 'Yes' or 'No'. No explanations." },
-                { role: "user", content: `CONTEXT: ${context}. QUESTION: ${userQuery}` }
+                { role: "system", content: "You are a Yes/No judge. NEVER name the game. Answer ONLY 'Yes' or 'No'." },
+                { role: "user", content: `Context: ${context}. Question: ${query}` }
             ];
 
-            try {
-                const reply = await engine.chat.completions.create({ messages });
-                const raw = reply.choices[0].message.content.trim().toLowerCase();
-                const isTrue = raw.includes("yes");
+            const reply = await engine.chat.completions.create({ messages });
+            const isTrue = reply.choices[0].message.content.trim().toLowerCase().includes("yes");
 
-                questionsUsed++;
-                document.getElementById('q-count').innerText = questionsUsed;
-                
-                const li = document.createElement('li');
-                li.className = "flex justify-between items-center py-1 border-b border-gray-800 last:border-0";
-                li.innerHTML = `<span class="text-gray-400 truncate mr-2">${userQuery}</span> <span class="${isTrue ? 'text-green-500' : 'text-red-500'} font-bold">${isTrue ? 'YES' : 'NO'}</span>`;
-                document.getElementById('history-list').prepend(li);
-                
-                updateDisplay(isTrue ? 'yes' : 'no', isTrue ? 'Confirmation Received' : 'Negative Match');
-            } catch (err) {
-                updateDisplay('confused', 'Engine Error');
-            } finally {
-                btn.disabled = false;
+            attemptsRemaining--;
+            updateGrid(isTrue, query);
+            updateDisplay(isTrue ? 'yes' : 'no', isTrue ? 'True' : 'False');
+            checkLoss();
+        }
+
+        function updateGrid(isTrue, query) {
+            const qIndex = 20 - attemptsRemaining;
+            const square = document.getElementById(`q-square-${qIndex}`);
+            if (square) {
+                square.className = `grid-square ${isTrue ? 'border-green-500 text-green-500 bg-green-500/10' : 'border-red-500 text-red-500 bg-red-500/10'}`;
+                square.title = query; // Hover to see question
             }
+            document.getElementById('q-count').innerText = attemptsRemaining;
+        }
+
+        function checkLoss() {
+            if (attemptsRemaining <= 0) {
+                showModal("DEFEAT", "Out of attempts", "border-red-500", "text-red-500");
+            }
+        }
+
+        window.handleGiveUp = () => {
+            showModal("ABORTED", "Mission Failed", "border-yellow-600", "text-yellow-600");
         };
+
+        function showModal(status, msg, borderClass, textClass) {
+            const modal = document.getElementById('overlay-modal');
+            const content = document.getElementById('modal-content');
+            document.getElementById('modal-status').innerText = status;
+            document.getElementById('modal-status').className = `text-4xl font-black mb-2 uppercase italic tracking-tighter ${textClass}`;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('modal-title').innerText = secretGame.name;
+            content.className = `bg-gray-900 border ${borderClass} rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl`;
+            modal.style.display = 'flex';
+        }
 
         window.updateDisplay = (state, intent) => {
             const box = document.getElementById('display-box');
             const txt = document.getElementById('display-text');
             document.getElementById('detected-intent').innerText = intent;
-            box.className = "h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 px-6 text-center";
+            box.className = "h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-6 transition-all duration-300 px-6 text-center";
             if (state === 'thinking') { txt.innerText = "..."; box.classList.add('status-thinking'); }
             else if (state === 'yes') { txt.innerText = "Yes"; box.classList.add('status-yes'); }
             else if (state === 'no') { txt.innerText = "No"; box.classList.add('status-no'); }
-        };
-
-        window.submitGuess = () => {
-            const val = document.getElementById('guess-input').value.trim().toLowerCase();
-            if (val === secretGame.name.toLowerCase() || (secretGame.name.toLowerCase().includes(val) && val.length > 3)) {
-                document.getElementById('win-game-title').innerText = secretGame.name;
-                document.getElementById('win-modal').style.display = 'flex';
-            } else { alert("Incorrect. Re-evaluate your questions!"); }
         };
     </script>
 </body>
