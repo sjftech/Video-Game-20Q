@@ -2,63 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Video Game 20 Questions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-        
+        /* Using dynamic viewport height to handle the keyboard sliding up */
+        body { 
+            height: 100dvh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            background-color: black;
+        }
+
         .status-yes { @apply border-green-500 text-green-500 bg-green-500/10; }
         .status-no { @apply border-red-500 text-red-500 bg-red-500/10; }
         .status-thinking { @apply border-blue-500 text-blue-500 bg-blue-500/10 animate-pulse; }
-        
-        /* GRID KEYBOARD */
-        #virtual-keyboard {
-            @apply w-full p-2 pb-8 bg-black gap-1.5 shrink-0;
-            display: grid;
-            grid-template-columns: repeat(20, 1fr);
-        }
-
-        .key-cap { 
-            @apply flex items-center justify-center bg-gray-700 active:bg-blue-600 
-            text-white font-bold rounded shadow-md transition-all 
-            active:scale-95 touch-manipulation uppercase select-none;
-            grid-column: span 2;
-            min-height: 58px;
-            font-size: 13px;
-        }
-
-        /* Specific Key Widths */
-        .key-action { grid-column: span 3; @apply bg-gray-600 text-[10px]; }
-        .key-enter { @apply bg-blue-600 text-white; }
-        .key-space { grid-column: span 10; }
-
-        @media (min-width: 1024px) {
-            #virtual-keyboard { display: none !important; }
-            #unified-input { pointer-events: auto !important; }
-        }
-
-        @media (max-width: 1023px) {
-            #unified-input { pointer-events: none; }
-        }
 
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        
+        /* Smooth transitions for when the keyboard appears */
+        main { transition: height 0.2s ease-in-out; }
     </style>
 </head>
-<body class="bg-black text-gray-100 font-sans">
+<body class="text-gray-100 font-sans">
 
     <div id="overlay-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/95 backdrop-blur-md p-6">
-        <div id="modal-content" class="bg-gray-900 border rounded-3xl p-8 max-w-sm w-full text-center">
+        <div id="modal-content" class="bg-gray-900 border border-gray-800 rounded-3xl p-8 max-w-sm w-full text-center">
             <h2 id="modal-status" class="text-4xl font-black mb-2 uppercase italic">STATUS</h2>
             <p id="modal-msg" class="text-gray-400 mb-6 uppercase text-[10px] tracking-widest font-bold">Target Intel</p>
-            <div id="modal-title" class="text-2xl font-bold mb-8 text-white">Game Name</div>
-            <button onclick="location.reload()" class="w-full bg-white text-black py-4 rounded-xl font-bold uppercase">New Mission</button>
+            <div id="modal-title" class="text-2xl font-bold mb-8 text-white underline decoration-blue-500">Game Name</div>
+            <button onclick="location.reload()" class="w-full bg-white text-black py-4 rounded-xl font-bold uppercase">New Game</button>
         </div>
     </div>
 
     <div id="setup-screen" class="fixed inset-0 z-40 bg-black flex flex-col items-center justify-center p-10 text-center">
-        <h1 class="text-2xl font-black uppercase italic mb-8 tracking-tighter">Video Game 20 Questions</h1>
+        <h1 class="text-2xl font-black uppercase italic mb-8 tracking-tighter italic">Video Game 20 Questions</h1>
         <div class="w-full max-w-xs bg-gray-800 h-1.5 rounded-full overflow-hidden mb-4">
             <div id="loading-bar-fill" class="bg-blue-500 h-full w-0 transition-all"></div>
         </div>
@@ -73,56 +53,31 @@
         </div>
     </header>
 
-    <div class="p-4 shrink-0">
-        <div id="display-box" class="h-24 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-800 text-center">
-            <span id="display-text" class="text-4xl font-black uppercase tracking-tighter leading-none">READY</span>
-            <span id="detected-intent" class="text-[9px] mt-2 opacity-40 uppercase tracking-widest italic leading-none">Awaiting Input</span>
-        </div>
-    </div>
-
-    <div class="flex-1 overflow-hidden flex flex-col px-4 pb-2">
-        <p class="text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-black border-l-2 border-blue-600 pl-2">Question History</p>
-        <div id="memory-log" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-2">
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <div class="p-4 shrink-0">
+            <div id="display-box" class="h-20 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-800 text-center transition-all">
+                <span id="display-text" class="text-3xl font-black uppercase tracking-tighter leading-none">READY</span>
+                <span id="detected-intent" class="text-[9px] mt-1 opacity-40 uppercase tracking-widest italic leading-none">Awaiting Input</span>
             </div>
-    </div>
+        </div>
 
-    <div class="px-4 py-3 bg-black border-t border-gray-900 shrink-0">
-        <input type="text" id="unified-input" readonly placeholder="TYPE BELOW..." 
-            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-4 text-center text-sm text-blue-400 font-bold tracking-widest uppercase">
-    </div>
+        <div class="flex-1 overflow-hidden flex flex-col px-4">
+            <p class="text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-black border-l-2 border-blue-600 pl-2">Question History</p>
+            <div id="memory-log" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-2 pb-4">
+                </div>
+        </div>
+    </main>
 
-    <div id="virtual-keyboard">
-        <button class="key-cap" onclick="keyTap('1')">1</button><button class="key-cap" onclick="keyTap('2')">2</button>
-        <button class="key-cap" onclick="keyTap('3')">3</button><button class="key-cap" onclick="keyTap('4')">4</button>
-        <button class="key-cap" onclick="keyTap('5')">5</button><button class="key-cap" onclick="keyTap('6')">6</button>
-        <button class="key-cap" onclick="keyTap('7')">7</button><button class="key-cap" onclick="keyTap('8')">8</button>
-        <button class="key-cap" onclick="keyTap('9')">9</button><button class="key-cap" onclick="keyTap('0')">0</button>
-        
-        <button class="key-cap" onclick="keyTap('Q')">Q</button><button class="key-cap" onclick="keyTap('W')">W</button>
-        <button class="key-cap" onclick="keyTap('E')">E</button><button class="key-cap" onclick="keyTap('R')">R</button>
-        <button class="key-cap" onclick="keyTap('T')">T</button><button class="key-cap" onclick="keyTap('Y')">Y</button>
-        <button class="key-cap" onclick="keyTap('U')">U</button><button class="key-cap" onclick="keyTap('I')">I</button>
-        <button class="key-cap" onclick="keyTap('O')">O</button><button class="key-cap" onclick="keyTap('P')">P</button>
-
-        <div style="grid-column: span 1;"></div>
-        <button class="key-cap" onclick="keyTap('A')">A</button><button class="key-cap" onclick="keyTap('S')">S</button>
-        <button class="key-cap" onclick="keyTap('D')">D</button><button class="key-cap" onclick="keyTap('F')">F</button>
-        <button class="key-cap" onclick="keyTap('G')">G</button><button class="key-cap" onclick="keyTap('H')">H</button>
-        <button class="key-cap" onclick="keyTap('J')">J</button><button class="key-cap" onclick="keyTap('K')">K</button>
-        <button class="key-cap" onclick="keyTap('L')">L</button>
-        <div style="grid-column: span 1;"></div>
-
-        <button class="key-cap key-action key-enter" onclick="processInput()">ENTER</button>
-        <button class="key-cap" onclick="keyTap('Z')">Z</button><button class="key-cap" onclick="keyTap('X')">X</button>
-        <button class="key-cap" onclick="keyTap('C')">C</button><button class="key-cap" onclick="keyTap('V')">V</button>
-        <button class="key-cap" onclick="keyTap('B')">B</button><button class="key-cap" onclick="keyTap('N')">N</button>
-        <button class="key-cap" onclick="keyTap('M')">M</button>
-        <button class="key-cap key-action" onclick="keyTap('BACK')">DEL</button>
-
-        <button class="key-cap" style="grid-column: span 3" onclick="keyTap('?')">?</button>
-        <button class="key-cap key-space" onclick="keyTap(' ')">SPACE</button>
-        <button class="key-cap" style="grid-column: span 3" onclick="keyTap('.')">.</button>
-    </div>
+    <footer class="p-4 bg-gray-950 border-t border-gray-900 shrink-0 pb-safe">
+        <form id="game-form" onsubmit="event.preventDefault(); processInput();" class="flex gap-2">
+            <input type="text" id="unified-input" 
+                placeholder="Type your question or guess..." 
+                autocomplete="off"
+                spellcheck="true"
+                class="flex-1 bg-black border border-gray-800 rounded-xl p-4 text-sm text-blue-400 font-bold focus:border-blue-500 transition-colors">
+            <button type="submit" class="bg-white text-black px-6 rounded-xl font-bold text-xs uppercase active:bg-blue-500 transition-colors">Send</button>
+        </form>
+    </footer>
 
     <script type="module">
         import * as webllm from "https://esm.run/@mlc-ai/web-llm";
@@ -132,12 +87,6 @@
         let secretGame = null;
         let wikiContext = "";
         let attemptsRemaining = 20;
-
-        window.keyTap = (char) => {
-            const input = document.getElementById('unified-input');
-            if (char === 'BACK') input.value = input.value.slice(0, -1);
-            else input.value += char;
-        };
 
         window.addEventListener('DOMContentLoaded', initializeAI);
 
@@ -180,7 +129,7 @@
                 return;
             }
 
-            const qWords = ["IS", "WAS", "DOES", "CAN", "HAS", "DID", "ARE", "YEAR", "GENRE", "SETTING", "?"];
+            const qWords = ["IS", "WAS", "DOES", "CAN", "HAS", "DID", "ARE", "YEAR", "GENRE", "SETTING"];
             const isQ = qWords.some(w => val.toUpperCase().includes(w)) || val.includes('?');
 
             if (!isQ && val.split(' ').length < 3) {
@@ -240,7 +189,7 @@
             const box = document.getElementById('display-box');
             const txt = document.getElementById('display-text');
             document.getElementById('detected-intent').innerText = intent;
-            box.className = "h-24 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-4 transition-all px-6 text-center";
+            box.className = "h-20 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-4 transition-all px-6 text-center";
             if (state === 'thinking') { txt.innerText = "..."; box.classList.add('status-thinking'); }
             else if (state === 'yes') { txt.innerText = "YES"; box.classList.add('status-yes'); }
             else if (state === 'no') { txt.innerText = "NO"; box.classList.add('status-no'); }
