@@ -6,35 +6,33 @@
     <title>Video Game 20 Questions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Force app to fill screen height exactly */
         body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
         .status-yes { @apply border-green-500 text-green-500 bg-green-500/10; }
         .status-no { @apply border-red-500 text-red-500 bg-red-500/10; }
         .status-thinking { @apply border-blue-500 text-blue-500 bg-blue-500/10 animate-pulse; }
         
-        /* THE WORDLE-STYLE KEYBOARD (GRID FORCED) */
+        /* GRID KEYBOARD */
         #virtual-keyboard {
-            @apply w-full p-2 bg-black gap-1.5 shrink-0;
+            @apply w-full p-2 pb-8 bg-black gap-1.5 shrink-0;
             display: grid;
-            grid-template-columns: repeat(20, 1fr); /* 20 mini columns to allow spanning */
+            grid-template-columns: repeat(20, 1fr);
         }
 
         .key-cap { 
             @apply flex items-center justify-center bg-gray-700 active:bg-blue-600 
             text-white font-bold rounded shadow-md transition-all 
             active:scale-95 touch-manipulation uppercase select-none;
-            grid-column: span 2; /* Most keys take 2 slots */
+            grid-column: span 2;
             min-height: 58px;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        /* Adjustments for wider keys */
-        .key-del { grid-column: span 3; @apply bg-gray-600; }
+        /* Specific Key Widths */
+        .key-action { grid-column: span 3; @apply bg-gray-600 text-[10px]; }
+        .key-enter { @apply bg-blue-600 text-white; }
         .key-space { grid-column: span 10; }
-        .key-sym { grid-column: span 2; @apply bg-gray-600; }
 
-        /* Hide Virtual Keyboard on Desktop */
         @media (min-width: 1024px) {
             #virtual-keyboard { display: none !important; }
             #unified-input { pointer-events: auto !important; }
@@ -55,7 +53,7 @@
             <h2 id="modal-status" class="text-4xl font-black mb-2 uppercase italic">STATUS</h2>
             <p id="modal-msg" class="text-gray-400 mb-6 uppercase text-[10px] tracking-widest font-bold">Target Intel</p>
             <div id="modal-title" class="text-2xl font-bold mb-8 text-white">Game Name</div>
-            <button onclick="location.reload()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold uppercase">New Game</button>
+            <button onclick="location.reload()" class="w-full bg-white text-black py-4 rounded-xl font-bold uppercase">New Mission</button>
         </div>
     </div>
 
@@ -77,8 +75,8 @@
 
     <div class="p-4 shrink-0">
         <div id="display-box" class="h-24 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-800 text-center">
-            <span id="display-text" class="text-4xl font-black uppercase tracking-tighter">READY</span>
-            <span id="detected-intent" class="text-[9px] mt-2 opacity-40 uppercase tracking-widest italic">Awaiting Input</span>
+            <span id="display-text" class="text-4xl font-black uppercase tracking-tighter leading-none">READY</span>
+            <span id="detected-intent" class="text-[9px] mt-2 opacity-40 uppercase tracking-widest italic leading-none">Awaiting Input</span>
         </div>
     </div>
 
@@ -88,12 +86,9 @@
             </div>
     </div>
 
-    <div class="px-4 py-2 bg-black border-t border-gray-900 shrink-0">
-        <div class="flex gap-2">
-            <input type="text" id="unified-input" readonly placeholder="Type or Question..." 
-                class="flex-1 bg-gray-900 border border-gray-800 rounded-lg p-3 text-sm text-blue-400 font-bold">
-            <button onclick="processInput()" class="bg-white text-black px-6 rounded-lg font-bold text-xs uppercase active:bg-blue-500">Send</button>
-        </div>
+    <div class="px-4 py-3 bg-black border-t border-gray-900 shrink-0">
+        <input type="text" id="unified-input" readonly placeholder="TYPE BELOW..." 
+            class="w-full bg-gray-950 border border-gray-800 rounded-xl p-4 text-center text-sm text-blue-400 font-bold tracking-widest uppercase">
     </div>
 
     <div id="virtual-keyboard">
@@ -117,16 +112,16 @@
         <button class="key-cap" onclick="keyTap('L')">L</button>
         <div style="grid-column: span 1;"></div>
 
-        <button class="key-cap key-sym" onclick="keyTap('?')">?</button>
+        <button class="key-cap key-action key-enter" onclick="processInput()">ENTER</button>
         <button class="key-cap" onclick="keyTap('Z')">Z</button><button class="key-cap" onclick="keyTap('X')">X</button>
         <button class="key-cap" onclick="keyTap('C')">C</button><button class="key-cap" onclick="keyTap('V')">V</button>
         <button class="key-cap" onclick="keyTap('B')">B</button><button class="key-cap" onclick="keyTap('N')">N</button>
         <button class="key-cap" onclick="keyTap('M')">M</button>
-        <button class="key-cap key-del" onclick="keyTap('BACK')">DEL</button>
+        <button class="key-cap key-action" onclick="keyTap('BACK')">DEL</button>
 
-        <div style="grid-column: span 5;"></div>
+        <button class="key-cap" style="grid-column: span 3" onclick="keyTap('?')">?</button>
         <button class="key-cap key-space" onclick="keyTap(' ')">SPACE</button>
-        <div style="grid-column: span 5;"></div>
+        <button class="key-cap" style="grid-column: span 3" onclick="keyTap('.')">.</button>
     </div>
 
     <script type="module">
@@ -170,7 +165,6 @@
             } catch (e) { wikiContext = ""; }
 
             document.getElementById('setup-screen').classList.add('hidden');
-            console.log("Secret: " + secretGame.name);
         }
 
         window.processInput = async () => {
@@ -203,7 +197,7 @@
         };
 
         async function handleAIQuestion(query) {
-            updateDisplay('thinking', 'Processing...');
+            updateDisplay('thinking', 'Neural Processing...');
             const finalContext = `Game: ${secretGame.name}. Tags: ${secretGame.tags.map(t=>t.name).join(',')}. Wiki: ${wikiContext.substring(0, 800)}`;
             const messages = [
                 { role: "system", content: "You are a Yes/No judge. NEVER name the game. Answer ONLY 'Yes' or 'No'." },
@@ -246,7 +240,7 @@
             const box = document.getElementById('display-box');
             const txt = document.getElementById('display-text');
             document.getElementById('detected-intent').innerText = intent;
-            box.className = "h-24 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-6 transition-all px-6 text-center";
+            box.className = "h-24 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-4 transition-all px-6 text-center";
             if (state === 'thinking') { txt.innerText = "..."; box.classList.add('status-thinking'); }
             else if (state === 'yes') { txt.innerText = "YES"; box.classList.add('status-yes'); }
             else if (state === 'no') { txt.innerText = "NO"; box.classList.add('status-no'); }
