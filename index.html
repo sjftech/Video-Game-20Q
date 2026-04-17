@@ -22,33 +22,32 @@
         </header>
 
         <div id="start-screen" class="text-center py-20 bg-gray-900/50 rounded-3xl border border-gray-800">
-            <button onclick="setupGame()" id="fetch-btn" class="bg-white text-black px-12 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform active:scale-95">
+            <button onclick="setupGame()" id="fetch-btn" class="bg-white text-black px-12 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform">
                 START NEW GAME
             </button>
-            <p id="loading-msg" class="hidden mt-4 text-gray-500 animate-pulse uppercase text-xs tracking-widest">Accessing Database...</p>
+            <p id="loading-msg" class="hidden mt-4 text-gray-500 animate-pulse uppercase text-xs tracking-widest">Consulting Database...</p>
         </div>
 
         <main id="game-board" class="hidden">
             <div class="flex justify-between items-end mb-4 px-2">
                 <div>
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Attempts</p>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest text-blue-400">Current Progress</p>
                     <p class="text-2xl font-mono"><span id="q-count">0</span><span class="text-gray-600">/20</span></p>
                 </div>
                 <div class="flex gap-4">
-                    <button onclick="toggleHistory()" class="text-xs text-blue-400 hover:text-blue-300 transition-colors uppercase font-bold tracking-widest">History</button>
-                    <button onclick="location.reload()" class="text-xs text-gray-500 hover:text-white transition-colors uppercase font-bold tracking-widest">Abandon</button>
+                    <button onclick="toggleHistory()" class="text-xs text-blue-400 hover:text-blue-300 uppercase font-bold tracking-widest">History</button>
+                    <button onclick="location.reload()" class="text-xs text-gray-500 hover:text-white uppercase font-bold tracking-widest">New Game</button>
                 </div>
             </div>
 
-            <div id="display-box" class="h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 status-default px-6">
-                <span id="display-text" class="text-5xl font-black uppercase tracking-tighter text-center">Ready</span>
-                <span id="detected-intent" class="text-[10px] mt-4 opacity-60 uppercase tracking-widest text-center">Ask a question and press Enter</span>
+            <div id="display-box" class="h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 status-default px-6 text-center">
+                <span id="display-text" class="text-5xl font-black uppercase tracking-tighter">Ready</span>
+                <span id="detected-intent" class="text-[10px] mt-4 opacity-60 uppercase tracking-widest">Enter a question and hit Enter</span>
             </div>
 
-            <div id="history-panel" class="hidden bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
-                <h3 class="text-[10px] uppercase tracking-widest text-gray-500 mb-2 border-b border-gray-800 pb-1">Question History</h3>
-                <ul id="history-list" class="text-sm space-y-1">
-                    </ul>
+            <div id="history-panel" class="hidden bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto shadow-inner">
+                <h3 class="text-[10px] uppercase tracking-widest text-gray-500 mb-2 border-b border-gray-800 pb-1">Answers Provided</h3>
+                <ul id="history-list" class="text-sm space-y-1"></ul>
             </div>
 
             <div class="space-y-6">
@@ -56,9 +55,9 @@
                     <div class="flex gap-2">
                         <input type="text" id="question-input" 
                             onkeypress="if(event.key === 'Enter') processQuestion()"
-                            placeholder="Ask about genre, year, platform..." 
+                            placeholder="e.g. 'Can I play with friends?' or 'Is it 3D?'" 
                             class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-white transition-colors">
-                        <button onclick="processQuestion()" class="bg-white text-black px-6 rounded-xl font-bold text-sm hover:bg-gray-200 uppercase">Ask</button>
+                        <button onclick="processQuestion()" class="bg-white text-black px-6 rounded-xl font-bold text-sm uppercase">Ask</button>
                     </div>
                 </div>
 
@@ -66,9 +65,9 @@
                     <div class="flex gap-2">
                         <input type="text" id="guess-input" 
                             onkeypress="if(event.key === 'Enter') submitGuess()"
-                            placeholder="Type the full game title..." 
+                            placeholder="Guess the game..." 
                             class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 transition-colors">
-                        <button onclick="submitGuess()" class="bg-blue-600 text-white px-6 rounded-xl font-bold text-sm hover:bg-blue-500 transition-colors uppercase tracking-widest">Solve</button>
+                        <button onclick="submitGuess()" class="bg-blue-600 text-white px-6 rounded-xl font-bold text-sm uppercase tracking-widest">Solve</button>
                     </div>
                 </div>
             </div>
@@ -79,28 +78,26 @@
         const API_KEY = 'cb76f55aa533491883169019a274e4c6';
         let secretGame = null;
         let questionsUsed = 0;
-        let history = [];
 
         async function setupGame() {
             document.getElementById('fetch-btn').classList.add('hidden');
             document.getElementById('loading-msg').classList.remove('hidden');
             try {
-                const randomPage = Math.floor(Math.random() * 25) + 1;
+                const randomPage = Math.floor(Math.random() * 30) + 1;
                 const response = await fetch(`https://api.rawg.io/api/games?key=${API_KEY}&page_size=40&page=${randomPage}&ordering=-added`);
                 const data = await response.json();
                 secretGame = data.results[Math.floor(Math.random() * data.results.length)];
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('game-board').classList.remove('hidden');
-                console.log("Secret Answer: " + secretGame.name);
+                console.log("Cheater! It's: " + secretGame.name);
             } catch (err) {
-                alert("Check your API key!");
+                alert("API Error. Check your key!");
                 location.reload();
             }
         }
 
         function toggleHistory() {
-            const panel = document.getElementById('history-panel');
-            panel.classList.toggle('hidden');
+            document.getElementById('history-panel').classList.toggle('hidden');
         }
 
         function processQuestion() {
@@ -110,74 +107,90 @@
 
             let isTrue = false;
             let intentMsg = "";
-            let recognized = true;
+            let recognized = false;
 
             const tags = secretGame.tags ? secretGame.tags.map(t => t.slug) : [];
-            const genres = secretGame.genres.map(g => g.slug);
+            const genreObjs = secretGame.genres || [];
             const platforms = secretGame.platforms.map(p => p.platform.name.toLowerCase());
 
-            // YEAR LOGIC - Looking for years specifically
+            // --- 1. BROAD MULTIPLAYER CHECK ---
+            const multiTerms = ["multiplayer", "multi player", "friends", "people", "together", "co-op", "coop", "online", "couch", "local", "with someone"];
+            if (multiTerms.some(term => query.includes(term))) {
+                recognized = true;
+                intentMsg = "Checking for Multiplayer/Social...";
+                isTrue = tags.some(t => t.includes('multiplayer') || t.includes('co-op') || t.includes('social'));
+            }
+
+            // --- 2. DYNAMIC GENRE CHECK (Checks API list against your question) ---
+            if (!recognized) {
+                genreObjs.forEach(g => {
+                    const gName = g.name.toLowerCase();
+                    if (query.includes(gName) || (gName === "role playing games" && query.includes("rpg"))) {
+                        recognized = true;
+                        intentMsg = `Genre: ${g.name}?`;
+                        isTrue = true; // Since we are looping through the secret game's OWN genres
+                    }
+                });
+            }
+
+            // --- 3. YEAR LOGIC ---
             const yearMatch = query.match(/\b(19|20)\d{2}\b/);
-            
-            if (query.includes("fighting")) {
-                intentMsg = "Genre: Fighting?";
-                isTrue = genres.includes('fighting');
-            }
-            else if (yearMatch && (query.includes("before") || query.includes("prior") || query.includes("older") || query.includes("come out"))) {
+            if (!recognized && yearMatch) {
                 const targetYear = parseInt(yearMatch[0]);
-                intentMsg = `Released before ${targetYear}?`;
-                isTrue = parseInt(secretGame.released.split('-')[0]) < targetYear;
+                if (query.includes("before") || query.includes("prior") || query.includes("older") || query.includes("come out")) {
+                    recognized = true;
+                    intentMsg = `Released before ${targetYear}?`;
+                    isTrue = parseInt(secretGame.released.split('-')[0]) < targetYear;
+                } else if (query.includes("after") || query.includes("since") || query.includes("newer")) {
+                    recognized = true;
+                    intentMsg = `Released after ${targetYear}?`;
+                    isTrue = parseInt(secretGame.released.split('-')[0]) > targetYear;
+                }
             }
-            else if (yearMatch && (query.includes("after") || query.includes("since") || query.includes("newer"))) {
-                const targetYear = parseInt(yearMatch[0]);
-                intentMsg = `Released after ${targetYear}?`;
-                isTrue = parseInt(secretGame.released.split('-')[0]) > targetYear;
+
+            // --- 4. EXCLUSIVITY & PLATFORM ---
+            if (!recognized) {
+                if (query.includes("nintendo") || query.includes("switch")) {
+                    recognized = true;
+                    intentMsg = "On Nintendo?";
+                    isTrue = platforms.some(p => p.includes('nintendo') || p.includes('switch'));
+                } else if (query.includes("sony") || query.includes("playstation") || query.includes("ps4") || query.includes("ps5")) {
+                    recognized = true;
+                    intentMsg = "On PlayStation?";
+                    isTrue = platforms.some(p => p.includes('playstation'));
+                }
             }
-            else if (query.includes("open world") || query.includes("sandbox")) {
-                intentMsg = "Open World?";
-                isTrue = tags.includes('open-world') || tags.includes('sandbox');
+
+            // --- 5. STYLE (2D/3D/Open World) ---
+            if (!recognized) {
+                if (query.includes("open world") || query.includes("sandbox")) {
+                    recognized = true;
+                    intentMsg = "Open World?";
+                    isTrue = tags.includes('open-world') || tags.includes('sandbox');
+                } else if (query.includes("2d") || query.includes("side scroller")) {
+                    recognized = true;
+                    intentMsg = "Is it 2D?";
+                    isTrue = tags.includes('2d') || tags.includes('side-scroller');
+                } else if (query.includes("3d") || query.includes("third person") || query.includes("first person")) {
+                    recognized = true;
+                    intentMsg = "Is it 3D?";
+                    isTrue = tags.includes('3d') || tags.includes('first-person') || tags.includes('third-person');
+                }
             }
-            else if (query.includes("couch") || query.includes("local") || query.includes("split screen")) {
-                intentMsg = "Local Multiplayer?";
-                isTrue = tags.some(t => t.includes('local-multiplayer') || t.includes('split-screen'));
-            }
-            else if (query.includes("2d") || (query.includes("two") && query.includes("dimensional"))) {
-                intentMsg = "Is it 2D?";
-                isTrue = tags.includes('2d') || tags.includes('side-scroller');
-            }
-            else if (query.includes("nintendo") || query.includes("switch")) {
-                intentMsg = "On Nintendo?";
-                isTrue = platforms.some(p => p.includes('nintendo') || p.includes('switch'));
-            }
-            else if (query.includes("playstation") || query.includes("sony")) {
-                intentMsg = "On PlayStation?";
-                isTrue = platforms.some(p => p.includes('playstation'));
-            }
-            else if (query.includes("action")) {
-                intentMsg = "Action?";
-                isTrue = genres.includes('action');
-            }
-            else if (query.includes("rpg")) {
-                intentMsg = "RPG?";
-                isTrue = genres.includes('role-playing');
-            }
-            else { recognized = false; }
 
             if (recognized) {
-                // Only increment and log if recognized
                 questionsUsed++;
                 document.getElementById('q-count').innerText = questionsUsed;
                 
-                // Add to history list
                 const historyList = document.getElementById('history-list');
                 const li = document.createElement('li');
                 li.className = isTrue ? "text-green-400" : "text-red-400";
-                li.innerHTML = `<span class="text-gray-500">Q${questionsUsed}:</span> ${intentMsg} <span class="font-bold">${isTrue ? "YES" : "NO"}</span>`;
-                historyList.prepend(li); // Newest at top
+                li.innerHTML = `<span class="text-gray-600 font-mono">Q${questionsUsed}:</span> ${intentMsg} <span class="font-bold ml-1">${isTrue ? "YES" : "NO"}</span>`;
+                historyList.prepend(li);
                 
                 updateDisplay(isTrue, intentMsg);
             } else {
-                updateDisplay(null, "I didn't understand the question. (Attempt not counted)");
+                updateDisplay(null, "I didn't catch that. Try asking about genre, friends, or dates.");
             }
             
             input.value = ""; 
@@ -190,10 +203,10 @@
             sub.innerText = intent;
             if (isTrue === null) {
                 txt.innerText = "???";
-                box.className = `h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 status-confused px-6`;
+                box.className = `h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 status-confused px-6 transition-all duration-300`;
             } else {
                 txt.innerText = isTrue ? "Yes" : "No";
-                box.className = `h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 ${isTrue ? 'status-yes' : 'status-no'} px-6`;
+                box.className = `h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 ${isTrue ? 'status-yes' : 'status-no'} px-6 transition-all duration-300`;
             }
         }
 
