@@ -96,7 +96,7 @@
             const statusLabel = document.getElementById('loading-status');
             const bar = document.getElementById('loading-bar-fill');
 
-            const selectedModel = "Llama-3-8B-Instruct-v0.1-q4f32_1-MLC"; // Efficient small model
+            const selectedModel = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC"; // Efficient small model
 
             engine = await webllm.CreateMLCEngine(selectedModel, {
                 initProgressCallback: (report) => {
