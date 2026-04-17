@@ -3,97 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Scoop! 20 Questions</title>
+    <title>20 Questions: Video Games</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .btn-query { @apply bg-gray-800 border border-gray-700 p-3 rounded-lg hover:bg-gray-700 transition-all text-sm font-medium active:scale-95; }
+        .status-yes { @apply border-green-500 text-green-500 bg-green-500/10; }
+        .status-no { @apply border-red-500 text-red-500 bg-red-500/10; }
+        .status-default { @apply border-gray-700 text-gray-500 bg-gray-900/50; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white p-8 font-sans">
-    <div class="max-w-2xl mx-auto text-center">
-        <h1 class="text-4xl font-bold mb-4 text-yellow-400">Game Scoop 20 Questions</h1>
-        <p class="mb-8 italic text-slate-400">"The only video game podcast you need... in game form!"</p>
+<body class="bg-black text-gray-100 min-h-screen flex flex-col items-center p-6 font-sans">
 
-        <div id="game-container" class="bg-slate-800 p-6 rounded-xl shadow-2xl border border-slate-700">
-            <div id="intro-screen">
-                <button onclick="startGame()" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-full transition-all">
-                    Pick a Random Game
+    <div class="w-full max-w-xl">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold tracking-tight mb-2">20 Questions</h1>
+            <p class="text-gray-500 uppercase tracking-widest text-xs">Video Game Edition</p>
+        </header>
+
+        <main id="game-board" class="hidden">
+            <div class="flex justify-between items-end mb-4 px-2">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Progress</p>
+                    <p class="text-2xl font-mono"><span id="q-count">0</span><span class="text-gray-600">/20</span></p>
+                </div>
+                <button onclick="location.reload()" class="text-xs text-gray-500 hover:text-white transition-colors">NEW GAME</button>
+            </div>
+
+            <div id="display-box" class="h-40 flex items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 status-default">
+                <span id="display-text" class="text-5xl font-black uppercase tracking-tighter">Ready</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-10">
+                <button class="btn-query" onclick="ask('genre', 'Action')">Action?</button>
+                <button class="btn-query" onclick="ask('genre', 'Role Playing Games')">RPG?</button>
+                <button class="btn-query" onclick="ask('platform', 'Nintendo')">Nintendo?</button>
+                <button class="btn-query" onclick="ask('platform', 'PlayStation')">PlayStation?</button>
+                <button class="btn-query" onclick="ask('platform', 'PC')">PC?</button>
+                <button class="btn-query" onclick="ask('year', 2018)">Released 2018+</button>
+                <button class="btn-query" onclick="ask('year', 2010)">Released 2010-</button>
+                <button class="btn-query" onclick="ask('meta', 85)">High Metacritic (85+)?</button>
+            </div>
+
+            <div class="space-y-4">
+                <input type="text" id="guess-input" placeholder="Enter game title..." 
+                    class="w-full bg-gray-900 border border-gray-800 rounded-xl p-4 text-center text-lg focus:outline-none focus:border-blue-500 transition-colors">
+                <button onclick="submitGuess()" class="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition-transform active:scale-95">
+                    SOLVE
                 </button>
             </div>
+        </main>
 
-            <div id="play-screen" class="hidden">
-                <div class="flex justify-between mb-4">
-                    <span class="text-lg">Questions Asked: <b id="count">0</b>/20</span>
-                    <button onclick="location.reload()" class="text-xs text-slate-400 hover:text-white underline">Restart</button>
-                </div>
-                
-                <div id="answer-box" class="h-24 flex items-center justify-center text-3xl font-bold mb-6 border-b border-slate-700">
-                    Waiting for a question...
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 text-sm">
-                    <button onclick="ask('genre', 'Action')" class="bg-slate-700 p-2 rounded hover:bg-slate-600">Is it Action?</button>
-                    <button onclick="ask('genre', 'RPG')" class="bg-slate-700 p-2 rounded hover:bg-slate-600">Is it an RPG?</button>
-                    <button onclick="ask('year', 2010)" class="bg-slate-700 p-2 rounded hover:bg-slate-600">Was it after 2010?</button>
-                    <button onclick="ask('platform', 'PlayStation')" class="bg-slate-700 p-2 rounded hover:bg-slate-600">Is it on PlayStation?</button>
-                    <button onclick="ask('platform', 'Nintendo')" class="bg-slate-700 p-2 rounded hover:bg-slate-600">Is it on Nintendo?</button>
-                    <button onclick="ask('meta', '90')" class="bg-slate-700 p-2 rounded hover:bg-slate-600">Metacritic 90+?</button>
-                </div>
-
-                <div class="mt-8 border-t border-slate-700 pt-6">
-                    <input id="guess-input" type="text" placeholder="Type your guess..." class="bg-slate-900 border border-slate-600 p-2 rounded w-full mb-2 text-center">
-                    <button onclick="checkGuess()" class="w-full bg-green-600 hover:bg-green-700 font-bold py-2 rounded">GUESS!</button>
-                </div>
-            </div>
+        <div id="start-screen" class="text-center py-20">
+            <button onclick="setupGame()" id="fetch-btn" class="bg-white text-black px-12 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform">
+                START GAME
+            </button>
+            <p id="loading-msg" class="hidden mt-4 text-gray-500 animate-pulse">Consulting the database...</p>
         </div>
     </div>
 
     <script>
-        const API_KEY = 'YOUR_API_KEY_HERE'; // PASTE YOUR KEY HERE
-        let targetGame = null;
-        let questionsAsked = 0;
+        /** CONFIGURATION **/
+        const API_KEY = 'cb76f55aa533491883169019a274e4c6'; // <--- PASTE YOUR RAWG API KEY HERE
+        
+        let secretGame = null;
+        let questionsUsed = 0;
 
-        async function startGame() {
-            // Fetch random popular games (page 1-10 of top games)
-            const randPage = Math.floor(Math.random() * 10) + 1;
-            const response = await fetch(`https://api.rawg.io/api/games?key=${API_KEY}&page=${randPage}&page_size=20&ordering=-added`);
-            const data = await response.json();
-            
-            // Pick a random game from those 20
-            targetGame = data.results[Math.floor(Math.random() * data.results.length)];
-            
-            document.getElementById('intro-screen').classList.add('hidden');
-            document.getElementById('play-screen').classList.remove('hidden');
-            console.log("Cheater! The game is: ", targetGame.name);
+        async function setupGame() {
+            const btn = document.getElementById('fetch-btn');
+            const msg = document.getElementById('loading-msg');
+            btn.classList.add('hidden');
+            msg.classList.remove('hidden');
+
+            try {
+                // Fetching from a pool of popular games to ensure they are guessable
+                const randomPage = Math.floor(Math.random() * 10) + 1;
+                const response = await fetch(`https://api.rawg.io/api/games?key=${API_KEY}&page_size=40&page=${randomPage}&ordering=-added`);
+                const data = await response.json();
+                
+                secretGame = data.results[Math.floor(Math.random() * data.results.length)];
+                
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('game-board').classList.remove('hidden');
+                
+                // Debugging: Secret answer is in the Console (F12)
+                console.log("Secret Answer: " + secretGame.name);
+            } catch (err) {
+                alert("Failed to load game library. Check your API key.");
+                location.reload();
+            }
         }
 
         function ask(type, val) {
-            if (questionsAsked >= 20) return alert("Out of questions!");
-            
-            questionsAsked++;
-            document.getElementById('count').innerText = questionsAsked;
-            let answer = "NO";
+            if (questionsUsed >= 20) return;
 
-            if (type === 'genre') {
-                if (targetGame.genres.some(g => g.name.includes(val))) answer = "YES!";
-            } else if (type === 'platform') {
-                if (targetGame.platforms.some(p => p.platform.name.includes(val))) answer = "YES!";
-            } else if (type === 'year') {
-                const year = parseInt(targetGame.released.split('-')[0]);
-                if (year > val) answer = "YES!";
-            } else if (type === 'meta') {
-                if (targetGame.metacritic >= 90) answer = "YES!";
+            questionsUsed++;
+            document.getElementById('q-count').innerText = questionsUsed;
+            
+            let isTrue = false;
+
+            switch(type) {
+                case 'genre':
+                    isTrue = secretGame.genres.some(g => g.name.includes(val));
+                    break;
+                case 'platform':
+                    isTrue = secretGame.platforms.some(p => p.platform.name.includes(val));
+                    break;
+                case 'meta':
+                    isTrue = secretGame.metacritic >= val;
+                    break;
+                case 'year':
+                    const releaseYear = parseInt(secretGame.released.split('-')[0]);
+                    isTrue = (val === 2018) ? (releaseYear >= 2018) : (releaseYear <= 2010);
+                    break;
             }
 
-            const box = document.getElementById('answer-box');
-            box.innerText = answer;
-            box.className = `h-24 flex items-center justify-center text-3xl font-bold mb-6 border-b border-slate-700 ${answer === 'YES!' ? 'text-green-400' : 'text-red-400'}`;
+            updateDisplay(isTrue);
         }
 
-        function checkGuess() {
-            const guess = document.getElementById('guess-input').value.toLowerCase();
-            if (guess === targetGame.name.toLowerCase()) {
-                alert("YOU WIN! It was " + targetGame.name);
+        function updateDisplay(isTrue) {
+            const box = document.getElementById('display-box');
+            const txt = document.getElementById('display-text');
+            
+            txt.innerText = isTrue ? "Yes" : "No";
+            box.className = `h-40 flex items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 ${isTrue ? 'status-yes' : 'status-no'}`;
+        }
+
+        function submitGuess() {
+            const input = document.getElementById('guess-input').value.trim().toLowerCase();
+            const solution = secretGame.name.toLowerCase();
+
+            if (input === solution) {
+                alert("CORRECT! The game was " + secretGame.name);
                 location.reload();
             } else {
-                alert("Nope! Try again.");
+                alert("Incorrect. That's not it!");
             }
         }
     </script>
