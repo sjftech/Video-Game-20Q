@@ -10,6 +10,8 @@
         .status-no { @apply border-red-500 text-red-500 bg-red-500/10; }
         .status-default { @apply border-gray-700 text-gray-500 bg-gray-900/50; }
         .status-confused { @apply border-yellow-600 text-yellow-600 bg-yellow-600/10; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-black text-gray-100 min-h-screen flex flex-col items-center p-4 md:p-10 font-sans tracking-tight">
@@ -32,23 +34,31 @@
                     <p class="text-[10px] text-gray-500 uppercase tracking-widest">Attempts</p>
                     <p class="text-2xl font-mono"><span id="q-count">0</span><span class="text-gray-600">/20</span></p>
                 </div>
-                <button onclick="location.reload()" class="text-xs text-gray-500 hover:text-white transition-colors">ABANDON</button>
+                <div class="flex gap-4">
+                    <button onclick="toggleHistory()" class="text-xs text-blue-400 hover:text-blue-300 transition-colors uppercase font-bold tracking-widest">History</button>
+                    <button onclick="location.reload()" class="text-xs text-gray-500 hover:text-white transition-colors uppercase font-bold tracking-widest">Abandon</button>
+                </div>
             </div>
 
             <div id="display-box" class="h-40 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-8 transition-all duration-300 status-default px-6">
                 <span id="display-text" class="text-5xl font-black uppercase tracking-tighter text-center">Ready</span>
-                <span id="detected-intent" class="text-[10px] mt-4 opacity-60 uppercase tracking-widest text-center">Type a question and press Enter</span>
+                <span id="detected-intent" class="text-[10px] mt-4 opacity-60 uppercase tracking-widest text-center">Ask a question and press Enter</span>
+            </div>
+
+            <div id="history-panel" class="hidden bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
+                <h3 class="text-[10px] uppercase tracking-widest text-gray-500 mb-2 border-b border-gray-800 pb-1">Question History</h3>
+                <ul id="history-list" class="text-sm space-y-1">
+                    </ul>
             </div>
 
             <div class="space-y-6">
                 <div>
-                    <label class="text-[10px] text-gray-500 uppercase tracking-widest ml-2 mb-2 block">Ask something about genre, platform, or style</label>
                     <div class="flex gap-2">
                         <input type="text" id="question-input" 
                             onkeypress="if(event.key === 'Enter') processQuestion()"
-                            placeholder="e.g. 'Is it open world?' or 'Is it 2D?'" 
+                            placeholder="Ask about genre, year, platform..." 
                             class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-white transition-colors">
-                        <button onclick="processQuestion()" class="bg-white text-black px-6 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors uppercase">Ask</button>
+                        <button onclick="processQuestion()" class="bg-white text-black px-6 rounded-xl font-bold text-sm hover:bg-gray-200 uppercase">Ask</button>
                     </div>
                 </div>
 
@@ -69,17 +79,16 @@
         const API_KEY = 'cb76f55aa533491883169019a274e4c6';
         let secretGame = null;
         let questionsUsed = 0;
+        let history = [];
 
         async function setupGame() {
             document.getElementById('fetch-btn').classList.add('hidden');
             document.getElementById('loading-msg').classList.remove('hidden');
             try {
-                // Fetching from a wide pool of popular games
                 const randomPage = Math.floor(Math.random() * 25) + 1;
                 const response = await fetch(`https://api.rawg.io/api/games?key=${API_KEY}&page_size=40&page=${randomPage}&ordering=-added`);
                 const data = await response.json();
                 secretGame = data.results[Math.floor(Math.random() * data.results.length)];
-                
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('game-board').classList.remove('hidden');
                 console.log("Secret Answer: " + secretGame.name);
@@ -89,14 +98,15 @@
             }
         }
 
+        function toggleHistory() {
+            const panel = document.getElementById('history-panel');
+            panel.classList.toggle('hidden');
+        }
+
         function processQuestion() {
             const input = document.getElementById('question-input');
             const query = input.value.toLowerCase().trim();
             if (!query || questionsUsed >= 20) return;
-
-            questionsUsed++;
-            document.getElementById('q-count').innerText = questionsUsed;
-            input.value = ""; 
 
             let isTrue = false;
             let intentMsg = "";
@@ -106,59 +116,71 @@
             const genres = secretGame.genres.map(g => g.slug);
             const platforms = secretGame.platforms.map(p => p.platform.name.toLowerCase());
 
-            // 1. OPEN WORLD
-            if (query.includes("open world") || query.includes("sandbox")) {
-                intentMsg = "Checking if Open World...";
-                isTrue = tags.includes('open-world') || tags.includes('sandbox');
-            }
-            // 2. COUCH CO-OP / LOCAL MULTIPLAYER
-            else if (query.includes("couch") || query.includes("local") || query.includes("split screen")) {
-                intentMsg = "Checking for Local Multiplayer...";
-                isTrue = tags.some(t => t.includes('local-multiplayer') || t.includes('split-screen') || t.includes('local-co-op'));
-            }
-            // 3. 2D vs 3D
-            else if (query.includes("2d") || query.includes("two dimensional")) {
-                intentMsg = "Checking if 2D...";
-                isTrue = tags.includes('2d') || tags.includes('side-scroller');
-            }
-            else if (query.includes("3d") || query.includes("three dimensional")) {
-                intentMsg = "Checking if 3D...";
-                // Logic: If it's not tagged 2D and has 3D identifiers
-                isTrue = tags.includes('3d') || tags.includes('first-person') || tags.includes('third-person');
-            }
-            // 4. JAPANESE DEVELOPER (The most common country query)
-            else if (query.includes("japan") || query.includes("japanese")) {
-                intentMsg = "Checking if Japanese Developer...";
-                // Note: We check tags as RAWG often tags "japanese-game"
-                isTrue = tags.includes('japanese-game') || tags.includes('jrpg');
-            }
-            // 5. GENRES (Fighting, RPG, etc)
-            else if (query.includes("fighting")) {
+            // YEAR LOGIC - Looking for years specifically
+            const yearMatch = query.match(/\b(19|20)\d{2}\b/);
+            
+            if (query.includes("fighting")) {
                 intentMsg = "Genre: Fighting?";
                 isTrue = genres.includes('fighting');
             }
-            else if (query.includes("shooter") || query.includes("fps")) {
-                intentMsg = "Genre: Shooter?";
-                isTrue = genres.includes('shooter') || tags.includes('fps');
+            else if (yearMatch && (query.includes("before") || query.includes("prior") || query.includes("older") || query.includes("come out"))) {
+                const targetYear = parseInt(yearMatch[0]);
+                intentMsg = `Released before ${targetYear}?`;
+                isTrue = parseInt(secretGame.released.split('-')[0]) < targetYear;
             }
-            else if (query.includes("rpg") || query.includes("role playing")) {
-                intentMsg = "Genre: RPG?";
+            else if (yearMatch && (query.includes("after") || query.includes("since") || query.includes("newer"))) {
+                const targetYear = parseInt(yearMatch[0]);
+                intentMsg = `Released after ${targetYear}?`;
+                isTrue = parseInt(secretGame.released.split('-')[0]) > targetYear;
+            }
+            else if (query.includes("open world") || query.includes("sandbox")) {
+                intentMsg = "Open World?";
+                isTrue = tags.includes('open-world') || tags.includes('sandbox');
+            }
+            else if (query.includes("couch") || query.includes("local") || query.includes("split screen")) {
+                intentMsg = "Local Multiplayer?";
+                isTrue = tags.some(t => t.includes('local-multiplayer') || t.includes('split-screen'));
+            }
+            else if (query.includes("2d") || (query.includes("two") && query.includes("dimensional"))) {
+                intentMsg = "Is it 2D?";
+                isTrue = tags.includes('2d') || tags.includes('side-scroller');
+            }
+            else if (query.includes("nintendo") || query.includes("switch")) {
+                intentMsg = "On Nintendo?";
+                isTrue = platforms.some(p => p.includes('nintendo') || p.includes('switch'));
+            }
+            else if (query.includes("playstation") || query.includes("sony")) {
+                intentMsg = "On PlayStation?";
+                isTrue = platforms.some(p => p.includes('playstation'));
+            }
+            else if (query.includes("action")) {
+                intentMsg = "Action?";
+                isTrue = genres.includes('action');
+            }
+            else if (query.includes("rpg")) {
+                intentMsg = "RPG?";
                 isTrue = genres.includes('role-playing');
-            }
-            // 6. EXCLUSIVITY
-            else if (query.includes("exclusive") || query.includes("only on")) {
-                const brands = ['nintendo', 'playstation', 'xbox', 'pc'];
-                let target = brands.find(b => query.includes(b));
-                if (target) {
-                    intentMsg = `Only on ${target}?`;
-                    isTrue = platforms.every(p => p.includes(target) || p.includes('ios') || p.includes('android'));
-                } else {
-                    isTrue = secretGame.platforms.length === 1;
-                }
             }
             else { recognized = false; }
 
-            updateDisplay(recognized ? isTrue : null, recognized ? intentMsg : "I didn't recognize that. Try 'Open World', '2D', or 'Couch Co-op'.");
+            if (recognized) {
+                // Only increment and log if recognized
+                questionsUsed++;
+                document.getElementById('q-count').innerText = questionsUsed;
+                
+                // Add to history list
+                const historyList = document.getElementById('history-list');
+                const li = document.createElement('li');
+                li.className = isTrue ? "text-green-400" : "text-red-400";
+                li.innerHTML = `<span class="text-gray-500">Q${questionsUsed}:</span> ${intentMsg} <span class="font-bold">${isTrue ? "YES" : "NO"}</span>`;
+                historyList.prepend(li); // Newest at top
+                
+                updateDisplay(isTrue, intentMsg);
+            } else {
+                updateDisplay(null, "I didn't understand the question. (Attempt not counted)");
+            }
+            
+            input.value = ""; 
         }
 
         function updateDisplay(isTrue, intent) {
@@ -182,7 +204,7 @@
                 alert("CORRECT! It was " + secretGame.name);
                 location.reload();
             } else {
-                alert("Nope! Try another guess.");
+                alert("Incorrect!");
             }
         }
     </script>
