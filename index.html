@@ -2,75 +2,100 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Video Game 20 Questions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .status-yes { @apply border-green-500 text-green-500 bg-green-500/10; }
         .status-no { @apply border-red-500 text-red-500 bg-red-500/10; }
-        .status-default { @apply border-gray-700 text-gray-500 bg-gray-900/50; }
         .status-thinking { @apply border-blue-500 text-blue-500 bg-blue-500/10 animate-pulse; }
-        #overlay-modal { display: none; }
-        /* Mobile-friendly scrollbar */
+        /* Prevent system keyboard */
+        input:focus { outline: none; }
+        .key-cap { @apply flex-1 bg-gray-800 hover:bg-gray-700 active:bg-blue-600 text-white font-bold py-3 rounded-md text-sm transition-all active:scale-90 touch-manipulation; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-black text-gray-100 min-h-screen flex flex-col items-center p-4 md:p-10 font-sans tracking-tight relative overflow-x-hidden">
+<body class="bg-black text-gray-100 h-screen overflow-hidden flex flex-col font-sans tracking-tight">
 
-    <div id="overlay-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-6">
+    <div id="overlay-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/95 backdrop-blur-md p-6">
         <div id="modal-content" class="bg-gray-900 border rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-            <h2 id="modal-status" class="text-4xl font-black mb-2 uppercase italic tracking-tighter">STATUS</h2>
-            <p id="modal-msg" class="text-gray-400 mb-6 uppercase text-[10px] tracking-widest">Game Concluded</p>
+            <h2 id="modal-status" class="text-4xl font-black mb-2 uppercase italic italic">STATUS</h2>
+            <p id="modal-msg" class="text-gray-400 mb-6 uppercase text-[10px] tracking-widest">Target Intel</p>
             <div id="modal-title" class="text-2xl font-bold mb-8 text-white">Game Name</div>
-            <button onclick="location.reload()" class="w-full bg-white text-black py-4 rounded-xl font-bold uppercase text-sm active:scale-95 transition-transform">New Game</button>
+            <button onclick="location.reload()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold uppercase text-sm">Play Again</button>
         </div>
     </div>
 
-    <div class="w-full max-w-xl flex flex-col min-h-[90vh]">
-        <header class="text-center mb-6">
-            <h1 class="text-2xl font-black uppercase italic tracking-tighter border-b border-gray-800 pb-2 inline-block">Video Game 20 Questions</h1>
-        </header>
+    <div id="setup-screen" class="fixed inset-0 z-40 bg-black flex flex-col items-center justify-center p-10 text-center">
+        <h1 class="text-2xl font-black uppercase italic mb-8">Video Game 20 Questions</h1>
+        <div class="w-48 bg-gray-800 h-1.5 rounded-full overflow-hidden mb-4">
+            <div id="loading-bar-fill" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+        <p id="loading-status" class="text-[10px] text-gray-500 uppercase tracking-widest font-mono">Loading Neural Weights...</p>
+    </div>
 
-        <div id="setup-screen" class="flex-1 flex flex-col items-center justify-center text-center py-12 bg-gray-900/30 rounded-3xl border border-gray-800 px-6">
-            <div id="loading-bar-container" class="w-full space-y-4">
-                <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                    <div id="loading-bar-fill" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
-                </div>
-                <p id="loading-status" class="text-[10px] text-gray-500 uppercase tracking-widest font-mono">Warming up AI...</p>
-                <button id="manual-boot" onclick="initializeAI()" class="hidden bg-blue-600 text-white px-8 py-3 rounded-full font-bold text-sm uppercase">Start Engine</button>
+    <header class="p-4 border-b border-gray-900 flex justify-between items-center bg-black">
+        <h1 class="text-xs font-black uppercase tracking-widest text-gray-500">20 Questions AI</h1>
+        <div class="flex items-center gap-4">
+            <span class="text-blue-500 font-mono text-sm font-bold">Try: <span id="q-count">20</span></span>
+            <button onclick="handleGiveUp()" class="text-[9px] font-bold text-red-500 uppercase border border-red-900 px-2 py-1 rounded">Give Up</button>
+        </div>
+    </header>
+
+    <main id="game-board" class="flex-1 flex flex-col overflow-hidden">
+        <div class="p-4">
+            <div id="display-box" class="h-24 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-800 px-6 text-center transition-all">
+                <span id="display-text" class="text-4xl font-black uppercase tracking-tighter">Ready</span>
+                <span id="detected-intent" class="text-[9px] mt-2 opacity-40 uppercase tracking-widest">Awaiting Input</span>
             </div>
         </div>
 
-        <main id="game-board" class="hidden flex-1 flex flex-col">
-            <div class="flex justify-between items-center mb-4 px-1">
-                <div>
-                    <p class="text-[9px] text-gray-500 uppercase tracking-widest">Left</p>
-                    <p class="text-xl font-mono font-bold text-blue-400"><span id="q-count">20</span></p>
+        <div class="flex-1 overflow-hidden flex flex-col px-4 pb-2">
+            <p class="text-[9px] text-gray-600 uppercase tracking-[0.2em] mb-2 font-bold">Question History</p>
+            <div id="memory-log" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-2 pb-4">
                 </div>
-                <div class="flex gap-3">
-                    <button onclick="handleGiveUp()" class="text-[10px] text-red-500 uppercase font-black tracking-widest border border-red-900/50 px-3 py-1 rounded-md">Give Up</button>
-                    <button onclick="location.reload()" class="text-[10px] text-gray-500 uppercase font-black tracking-widest px-1">Reset</button>
-                </div>
-            </div>
+        </div>
 
-            <div id="display-box" class="h-32 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-6 status-default px-6 text-center shadow-inner transition-all">
-                <span id="display-text" class="text-5xl font-black uppercase tracking-tighter leading-none">...</span>
-                <span id="detected-intent" class="text-[9px] mt-3 opacity-40 uppercase tracking-widest">Initializing Game Data</span>
+        <div class="p-4 bg-gray-950 border-t border-gray-900">
+            <div class="flex gap-2">
+                <input type="text" id="unified-input" readonly 
+                    inputmode="none"
+                    placeholder="Type using keyboard below..." 
+                    class="flex-1 bg-black border border-gray-800 rounded-lg p-3 text-sm text-blue-400 font-medium">
+                <button onclick="processInput()" class="bg-white text-black px-6 rounded-lg font-bold text-xs uppercase active:bg-blue-500 transition-colors">Send</button>
             </div>
+        </div>
 
-            <div class="flex gap-2 mb-6">
-                <input type="text" id="unified-input" onkeypress="if(event.key === 'Enter') processInput()" placeholder="Ask a question or guess..." class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 text-sm focus:outline-none focus:border-blue-500 appearance-none">
-                <button id="send-btn" onclick="processInput()" class="bg-white text-black px-5 rounded-xl font-bold text-xs uppercase active:scale-90 transition-transform">Ask</button>
+        <div id="virtual-keyboard" class="bg-black p-1 pb-4 space-y-1">
+            <div class="flex gap-1 px-1">
+                <button class="key-cap" onclick="keyTap('Q')">Q</button><button class="key-cap" onclick="keyTap('W')">W</button>
+                <button class="key-cap" onclick="keyTap('E')">E</button><button class="key-cap" onclick="keyTap('R')">R</button>
+                <button class="key-cap" onclick="keyTap('T')">T</button><button class="key-cap" onclick="keyTap('Y')">Y</button>
+                <button class="key-cap" onclick="keyTap('U')">U</button><button class="key-cap" onclick="keyTap('I')">I</button>
+                <button class="key-cap" onclick="keyTap('O')">O</button><button class="key-cap" onclick="keyTap('P')">P</button>
             </div>
-
-            <div class="flex-1">
-                <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-3 border-l-2 border-blue-500 pl-2">Memory Log</p>
-                <div id="memory-log" class="custom-scroll flex flex-col gap-2 max-h-[30vh] overflow-y-auto pb-4">
-                    </div>
+            <div class="flex gap-1 px-4">
+                <button class="key-cap" onclick="keyTap('A')">A</button><button class="key-cap" onclick="keyTap('S')">S</button>
+                <button class="key-cap" onclick="keyTap('D')">D</button><button class="key-cap" onclick="keyTap('F')">F</button>
+                <button class="key-cap" onclick="keyTap('G')">G</button><button class="key-cap" onclick="keyTap('H')">H</button>
+                <button class="key-cap" onclick="keyTap('J')">J</button><button class="key-cap" onclick="keyTap('K')">K</button>
+                <button class="key-cap" onclick="keyTap('L')">L</button>
             </div>
-        </main>
-    </div>
+            <div class="flex gap-1 px-1">
+                <button class="key-cap" onclick="keyTap('Z')">Z</button><button class="key-cap" onclick="keyTap('X')">X</button>
+                <button class="key-cap" onclick="keyTap('C')">C</button><button class="key-cap" onclick="keyTap('V')">V</button>
+                <button class="key-cap" onclick="keyTap('B')">B</button><button class="key-cap" onclick="keyTap('N')">N</button>
+                <button class="key-cap" onclick="keyTap('M')">M</button>
+                <button class="key-cap bg-gray-600" onclick="keyTap('BACK')">⌫</button>
+            </div>
+            <div class="flex gap-1 px-1">
+                <button class="key-cap bg-gray-700" onclick="keyTap('?')">?</button>
+                <button class="key-cap grow-[4]" onclick="keyTap(' ')">SPACE</button>
+                <button class="key-cap bg-gray-700" onclick="keyTap('.')">.</button>
+            </div>
+        </div>
+    </main>
 
     <script type="module">
         import * as webllm from "https://esm.run/@mlc-ai/web-llm";
@@ -80,40 +105,38 @@
         let secretGame = null;
         let attemptsRemaining = 20;
 
-        // AUTO-BOOT ON LOAD
-        window.addEventListener('DOMContentLoaded', () => {
-            initializeAI();
-        });
+        // --- VIRTUAL KEYBOARD LOGIC ---
+        window.keyTap = (char) => {
+            const input = document.getElementById('unified-input');
+            if (char === 'BACK') {
+                input.value = input.value.slice(0, -1);
+            } else {
+                input.value += char;
+            }
+        };
 
-        window.initializeAI = async () => {
-            const statusLabel = document.getElementById('loading-status');
-            const bar = document.getElementById('loading-bar-fill');
-            const bootBtn = document.getElementById('manual-boot');
+        // --- GAME LOGIC ---
+        window.addEventListener('DOMContentLoaded', initializeAI);
 
+        async function initializeAI() {
             try {
                 engine = await webllm.CreateMLCEngine("Qwen2.5-0.5B-Instruct-q4f16_1-MLC", {
                     initProgressCallback: (r) => {
-                        const progress = Math.round(r.progress * 100);
-                        bar.style.width = progress + "%";
-                        statusLabel.innerText = r.text;
-                        // If it hangs or needs interaction, show button as fallback
-                        if (progress === 0 && r.text.includes("click")) bootBtn.classList.remove('hidden');
+                        document.getElementById('loading-bar-fill').style.width = (r.progress * 100) + "%";
+                        document.getElementById('loading-status').innerText = r.text;
                     }
                 });
                 await prepareGame();
             } catch (e) {
-                statusLabel.innerText = "Error: Use Chrome/Edge (WebGPU)";
-                bootBtn.classList.remove('hidden');
+                document.getElementById('loading-status').innerText = "WebGPU Error. Use Chrome/Edge.";
             }
-        };
+        }
 
         async function prepareGame() {
             const res = await fetch(`https://api.rawg.io/api/games?key=${RAWG_KEY}&page_size=40&page=${Math.floor(Math.random()*40)+1}&ordering=-added`);
             const data = await res.json();
             secretGame = data.results[Math.floor(Math.random() * data.results.length)];
             document.getElementById('setup-screen').classList.add('hidden');
-            document.getElementById('game-board').classList.remove('hidden');
-            updateDisplay('ready', 'Target Locked. Awaiting Question.');
             console.log("Secret: " + secretGame.name);
         }
 
@@ -125,16 +148,15 @@
             const lowerVal = val.toLowerCase();
             const solution = secretGame.name.toLowerCase();
 
-            // Guess Check
             if (lowerVal === solution || (solution.includes(lowerVal) && lowerVal.length > 3)) {
-                showModal("VICTORY", "Correct Guess", "border-green-500", "text-green-500");
+                showModal("VICTORY", "Target Found", "border-green-500", "text-green-500");
                 return;
             }
 
-            const questionWords = ["is", "was", "does", "can", "has", "did", "are", "would", "how", "?", "genre", "setting", "released", "year"];
-            const isQuestion = questionWords.some(word => lowerVal.includes(word));
+            const questionWords = ["IS", "WAS", "DOES", "CAN", "HAS", "DID", "ARE", "GENRE", "SETTING", "YEAR", "TYPE", "?"];
+            const isQuestion = questionWords.some(word => val.toUpperCase().includes(word));
 
-            if (!isQuestion && lowerVal.split(' ').length < 4) {
+            if (!isQuestion && val.split(' ').length < 3) {
                 attemptsRemaining--;
                 addLogItem(val, false);
                 updateDisplay('no', 'Incorrect Guess');
@@ -150,47 +172,41 @@
         async function handleAIQuestion(query) {
             updateDisplay('thinking', 'Neural Processing...');
             const context = `Target: ${secretGame.name}. Tags: ${secretGame.tags.map(t=>t.name).join(',')}. Genres: ${secretGame.genres.map(g=>g.name).join(',')}.`;
-            
             const messages = [
-                { role: "system", content: "You are a Yes/No judge. Rule 1: NEVER name the game. Rule 2: Answer ONLY 'Yes' or 'No'." },
+                { role: "system", content: "You are a Yes/No judge. Rule: Answer ONLY 'Yes' or 'No'. Never name the game." },
                 { role: "user", content: `Context: ${context}. Question: ${query}` }
             ];
-
             const reply = await engine.chat.completions.create({ messages });
             const isTrue = reply.choices[0].message.content.trim().toLowerCase().includes("yes");
 
             attemptsRemaining--;
             addLogItem(query, isTrue);
-            updateDisplay(isTrue ? 'yes' : 'no', isTrue ? 'True' : 'False');
+            updateDisplay(isTrue ? 'yes' : 'no', isTrue ? 'Confirmation' : 'Negative');
             checkLoss();
         }
 
         function addLogItem(query, isTrue) {
             const container = document.getElementById('memory-log');
             const chip = document.createElement('div');
-            chip.className = `flex items-center justify-between p-3 rounded-xl border ${isTrue ? 'border-green-900/50 bg-green-950/20 text-green-400' : 'border-red-900/50 bg-red-950/20 text-red-400'} animate-in fade-in duration-300`;
-            chip.innerHTML = `
-                <span class="text-xs font-medium truncate flex-1 pr-4">${query}</span>
-                <span class="text-[10px] font-black uppercase">${isTrue ? 'Yes' : 'No'}</span>
-            `;
+            chip.className = `p-3 rounded-lg border ${isTrue ? 'border-green-900/40 bg-green-900/10 text-green-400' : 'border-red-900/40 bg-red-900/10 text-red-400'}`;
+            chip.innerHTML = `<div class="flex justify-between items-center"><span class="text-[11px] font-bold uppercase truncate">${query}</span><span class="text-[10px] font-black">${isTrue ? 'YES' : 'NO'}</span></div>`;
             container.prepend(chip);
             document.getElementById('q-count').innerText = attemptsRemaining;
         }
 
         function checkLoss() {
-            if (attemptsRemaining <= 0) showModal("DEFEAT", "No attempts left", "border-red-500", "text-red-500");
+            if (attemptsRemaining <= 0) showModal("DEFEAT", "Out of attempts", "border-red-500", "text-red-500");
         }
 
         window.handleGiveUp = () => showModal("GAVE UP", "Mission Aborted", "border-yellow-600", "text-yellow-600");
 
         function showModal(status, msg, borderClass, textClass) {
             const modal = document.getElementById('overlay-modal');
-            const content = document.getElementById('modal-content');
             document.getElementById('modal-status').innerText = status;
-            document.getElementById('modal-status').className = `text-4xl font-black mb-2 uppercase italic tracking-tighter ${textClass}`;
+            document.getElementById('modal-status').className = `text-4xl font-black mb-2 uppercase italic ${textClass}`;
             document.getElementById('modal-msg').innerText = msg;
             document.getElementById('modal-title').innerText = secretGame.name;
-            content.className = `bg-gray-900 border ${borderClass} rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl`;
+            document.getElementById('modal-content').className = `bg-gray-900 border ${borderClass} rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl`;
             modal.style.display = 'flex';
         }
 
@@ -198,11 +214,11 @@
             const box = document.getElementById('display-box');
             const txt = document.getElementById('display-text');
             document.getElementById('detected-intent').innerText = intent;
-            box.className = "h-32 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-6 transition-all duration-300 px-6 text-center";
+            box.className = "h-24 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed mb-6 transition-all px-6 text-center";
             if (state === 'thinking') { txt.innerText = "..."; box.classList.add('status-thinking'); }
             else if (state === 'yes') { txt.innerText = "YES"; box.classList.add('status-yes'); }
             else if (state === 'no') { txt.innerText = "NO"; box.classList.add('status-no'); }
-            else if (state === 'ready') { txt.innerText = "GO"; box.classList.add('status-default'); }
+            else { txt.innerText = "READY"; box.classList.add('border-gray-800'); }
         };
     </script>
 </body>
