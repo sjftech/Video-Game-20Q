@@ -6,7 +6,6 @@
     <title>Video Game 20 Questions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Using dynamic viewport height to handle the keyboard sliding up */
         body { 
             height: 100dvh; 
             display: flex; 
@@ -14,15 +13,11 @@
             overflow: hidden; 
             background-color: black;
         }
-
         .status-yes { @apply border-green-500 text-green-500 bg-green-500/10; }
         .status-no { @apply border-red-500 text-red-500 bg-red-500/10; }
         .status-thinking { @apply border-blue-500 text-blue-500 bg-blue-500/10 animate-pulse; }
-
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        
-        /* Smooth transitions for when the keyboard appears */
         main { transition: height 0.2s ease-in-out; }
     </style>
 </head>
@@ -42,7 +37,7 @@
         <div class="w-full max-w-xs bg-gray-800 h-1.5 rounded-full overflow-hidden mb-4">
             <div id="loading-bar-fill" class="bg-blue-500 h-full w-0 transition-all"></div>
         </div>
-        <p id="loading-status" class="text-[10px] text-gray-500 uppercase font-mono">Loading Neural Weights...</p>
+        <p id="loading-status" class="text-[10px] text-gray-500 uppercase font-mono">Connecting to Neural Engine...</p>
     </div>
 
     <header class="p-4 border-b border-gray-900 flex justify-between items-center bg-black shrink-0">
@@ -56,26 +51,26 @@
     <main class="flex-1 flex flex-col overflow-hidden">
         <div class="p-4 shrink-0">
             <div id="display-box" class="h-20 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-800 text-center transition-all">
-                <span id="display-text" class="text-3xl font-black uppercase tracking-tighter leading-none">READY</span>
-                <span id="detected-intent" class="text-[9px] mt-1 opacity-40 uppercase tracking-widest italic leading-none">Awaiting Input</span>
+                <span id="display-text" class="text-3xl font-black uppercase tracking-tighter">READY</span>
+                <span id="detected-intent" class="text-[9px] mt-1 opacity-40 uppercase tracking-widest italic">Awaiting Input</span>
             </div>
         </div>
 
         <div class="flex-1 overflow-hidden flex flex-col px-4">
-            <p class="text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-black border-l-2 border-blue-600 pl-2">Question History</p>
+            <p class="text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-black border-l-2 border-blue-600 pl-2 italic">Question History</p>
             <div id="memory-log" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-2 pb-4">
                 </div>
         </div>
     </main>
 
-    <footer class="p-4 bg-gray-950 border-t border-gray-900 shrink-0 pb-safe">
+    <footer class="p-4 bg-gray-950 border-t border-gray-900 shrink-0">
         <form id="game-form" onsubmit="event.preventDefault(); processInput();" class="flex gap-2">
             <input type="text" id="unified-input" 
-                placeholder="Type your question or guess..." 
+                placeholder="Ask or guess..." 
                 autocomplete="off"
                 spellcheck="true"
-                class="flex-1 bg-black border border-gray-800 rounded-xl p-4 text-sm text-blue-400 font-bold focus:border-blue-500 transition-colors">
-            <button type="submit" class="bg-white text-black px-6 rounded-xl font-bold text-xs uppercase active:bg-blue-500 transition-colors">Send</button>
+                class="flex-1 bg-black border border-gray-800 rounded-xl p-4 text-sm text-blue-400 font-bold focus:border-blue-500">
+            <button type="submit" class="bg-white text-black px-6 rounded-xl font-bold text-xs uppercase active:bg-blue-500">Send</button>
         </form>
     </footer>
 
@@ -107,13 +102,22 @@
             const data = await res.json();
             secretGame = data.results[Math.floor(Math.random() * data.results.length)];
             
+            // DLC / Title Cleaning for Wikipedia
+            let cleanTitle = secretGame.name
+                .split(':')[0]           // Remove Subtitles
+                .split(' - ')[0]         // Remove dashes
+                .replace(/DLC|Expansion|Pack|Season Pass/gi, '') 
+                .trim();
+
             try {
-                const wRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(secretGame.name)}&format=json&origin=*`);
+                const wRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(cleanTitle)}&format=json&origin=*`);
                 const wData = await wRes.json();
-                wikiContext = wData.query.pages[Object.keys(wData.query.pages)[0]].extract || "";
-            } catch (e) { wikiContext = ""; }
+                const pages = wData.query.pages;
+                wikiContext = pages[Object.keys(pages)[0]].extract || "";
+            } catch (e) { wikiContext = "No wiki found."; }
 
             document.getElementById('setup-screen').classList.add('hidden');
+            console.log("Secret: " + secretGame.name + " | Wiki Search: " + cleanTitle);
         }
 
         window.processInput = async () => {
@@ -129,7 +133,7 @@
                 return;
             }
 
-            const qWords = ["IS", "WAS", "DOES", "CAN", "HAS", "DID", "ARE", "YEAR", "GENRE", "SETTING"];
+            const qWords = ["IS", "WAS", "DOES", "CAN", "HAS", "DID", "ARE", "YEAR", "GENRE", "SETTING", "RELEASE", "MADE"];
             const isQ = qWords.some(w => val.toUpperCase().includes(w)) || val.includes('?');
 
             if (!isQ && val.split(' ').length < 3) {
@@ -146,14 +150,35 @@
         };
 
         async function handleAIQuestion(query) {
-            updateDisplay('thinking', 'Neural Processing...');
-            const finalContext = `Game: ${secretGame.name}. Tags: ${secretGame.tags.map(t=>t.name).join(',')}. Wiki: ${wikiContext.substring(0, 800)}`;
+            updateDisplay('thinking', 'Factual Verification...');
+            
+            const officialContext = `
+                GAME NAME: ${secretGame.name}
+                WIKIPEDIA SUMMARY: ${wikiContext.substring(0, 1000)}
+                GENRES: ${secretGame.genres.map(g=>g.name).join(', ')}
+                TAGS: ${secretGame.tags.slice(0, 5).map(t=>t.name).join(', ')}
+            `;
+
             const messages = [
-                { role: "system", content: "You are a Yes/No judge. NEVER name the game. Answer ONLY 'Yes' or 'No'." },
-                { role: "user", content: `Context: ${finalContext}. Question: ${query}` }
+                { 
+                    role: "system", 
+                    content: `You are a factual Yes/No judge for a guessing game. 
+                    - Only use the provided context.
+                    - If the user asks about developer, genre, or year, check the context carefully.
+                    - If the data contradicts the user's question, say NO.
+                    - Answer ONLY 'Yes' or 'No'. Never provide explanations.` 
+                },
+                { role: "user", content: `Context: ${officialContext}\n\nQuestion: ${query}` }
             ];
-            const reply = await engine.chat.completions.create({ messages });
-            const isTrue = reply.choices[0].message.content.trim().toLowerCase().includes("yes");
+
+            const reply = await engine.chat.completions.create({ 
+                messages, 
+                temperature: 0.0 // Strict logic
+            });
+
+            const responseText = reply.choices[0].message.content.trim().toLowerCase();
+            const isTrue = responseText.includes("yes");
+
             attemptsRemaining--;
             addLogItem(query, isTrue);
             updateDisplay(isTrue ? 'yes' : 'no', isTrue ? 'Affirmative' : 'Negative');
